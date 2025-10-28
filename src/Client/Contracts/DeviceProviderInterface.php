@@ -41,9 +41,9 @@ interface DeviceProviderInterface
     /**
      * Get default device name
      *
-     * @return string
+     * @return string|null Returns null if no devices are available
      */
-    public function getDefaultDevice(): string;
+    public function getDefaultDevice(): ?string;
 
     /**
      * Check if device exists

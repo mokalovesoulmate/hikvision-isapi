@@ -79,7 +79,7 @@ class DatabaseDeviceProvider implements DeviceProviderInterface
         return $this->cachedDevices[$deviceName] ?? null;
     }
 
-    public function getDefaultDevice(): string
+    public function getDefaultDevice(): ?string
     {
         return $this->defaultDevice;
     }

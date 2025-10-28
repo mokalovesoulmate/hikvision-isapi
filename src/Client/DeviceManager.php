@@ -49,6 +49,13 @@ class DeviceManager
     {
         $deviceName = $deviceName ?? $this->provider->getDefaultDevice();
 
+        if ($deviceName === null) {
+            throw new \RuntimeException(
+                'No device name provided and no default device available. '.
+                'Please ensure at least one device is configured and online.'
+            );
+        }
+
         if (!isset($this->clients[$deviceName])) {
             $this->clients[$deviceName] = $this->createClient($deviceName);
         }

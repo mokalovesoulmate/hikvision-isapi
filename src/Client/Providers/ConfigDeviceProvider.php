@@ -28,7 +28,7 @@ class ConfigDeviceProvider implements DeviceProviderInterface
         return $this->config['devices'][$deviceName] ?? null;
     }
 
-    public function getDefaultDevice(): string
+    public function getDefaultDevice(): ?string
     {
         return $this->config['default'] ?? 'primary';
     }

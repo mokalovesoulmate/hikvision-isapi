@@ -31,13 +31,13 @@ class CallbackDeviceProvider implements DeviceProviderInterface
     /**
      * @param callable $deviceNamesCallback Callback that returns array of device names
      * @param callable $deviceConfigCallback Callback that returns device config for given name
-     * @param string $defaultDevice Default device name
+     * @param string|null $defaultDevice Default device name (null if no devices available)
      * @param callable|null $hasDeviceCallback Optional callback to check device existence
      */
     public function __construct(
         private $deviceNamesCallback,
         private $deviceConfigCallback,
-        private readonly string $defaultDevice = 'primary',
+        private readonly ?string $defaultDevice = null,
         private $hasDeviceCallback = null
     ) {}
 
@@ -51,7 +51,7 @@ class CallbackDeviceProvider implements DeviceProviderInterface
         return call_user_func($this->deviceConfigCallback, $deviceName);
     }
 
-    public function getDefaultDevice(): string
+    public function getDefaultDevice(): ?string
     {
         return $this->defaultDevice;
     }
