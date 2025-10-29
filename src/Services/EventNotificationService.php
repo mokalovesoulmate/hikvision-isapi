@@ -79,9 +79,9 @@ class EventNotificationService
             $data['HttpHostNotification']['eventList'] = $eventTypes;
         }
 
-        // Use PUT to create or update the host configuration
+        // Use PUT with XML format (event notification endpoint requires XML)
         $endpoint = sprintf(self::ENDPOINT_HTTP_HOST, $id);
-        return $this->client->put($endpoint, $data);
+        return $this->client->putXml($endpoint, $data);
     }
 
     /**
@@ -159,7 +159,7 @@ class EventNotificationService
         $config['HttpHostNotification']['enabled'] = true;
 
         $endpoint = sprintf(self::ENDPOINT_HTTP_HOST, $id);
-        return $this->client->put($endpoint, $config);
+        return $this->client->putXml($endpoint, $config);
     }
 
     /**
@@ -179,7 +179,7 @@ class EventNotificationService
         $config['HttpHostNotification']['enabled'] = false;
 
         $endpoint = sprintf(self::ENDPOINT_HTTP_HOST, $id);
-        return $this->client->put($endpoint, $config);
+        return $this->client->putXml($endpoint, $config);
     }
 
     /**

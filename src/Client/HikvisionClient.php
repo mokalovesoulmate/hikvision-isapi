@@ -76,6 +76,24 @@ class HikvisionClient
         return $this->httpClient->put($uri, $data, $options);
     }
 
+    /**
+     * PUT request with forced XML format
+     * Used for endpoints that require XML regardless of global format setting
+     */
+    public function putXml(string $endpoint, array $data = [], array $queryParams = []): array
+    {
+        // Force XML format in query params
+        $queryParams['format'] = 'xml';
+        $uri = $this->buildUri($endpoint, $queryParams);
+
+        $options = $this->buildOptions();
+        $options['_format'] = 'xml'; // Force XML format
+        $options['headers']['Content-Type'] = 'application/xml';
+        $options['headers']['Accept'] = 'application/xml';
+
+        return $this->httpClient->put($uri, $data, $options);
+    }
+
     public function delete(string $endpoint, array $queryParams = []): array
     {
         $uri = $this->buildUri($endpoint, $queryParams);
