@@ -109,9 +109,22 @@ class HttpClient implements HttpClientInterface
 
     /**
      * Convert array to XML string for Hikvision ISAPI
+     * Automatically detects root element from array structure
      */
-    private function arrayToXml(array $data, string $rootElement = 'UserInfo'): string
+    private function arrayToXml(array $data, ?string $rootElement = null): string
     {
+        // Auto-detect root element from array keys
+        if ($rootElement === null) {
+            // If array has single key, use it as root element
+            if (count($data) === 1) {
+                $rootElement = array_key_first($data);
+                $data = $data[$rootElement];
+            } else {
+                // Default fallback
+                $rootElement = 'UserInfo';
+            }
+        }
+
         $xml = new \SimpleXMLElement("<?xml version='1.0' encoding='UTF-8'?><{$rootElement} version=\"2.0\" xmlns=\"http://www.isapi.org/ver20/XMLSchema\"></{$rootElement}>");
 
         $this->arrayToXmlRecursive($data, $xml);
