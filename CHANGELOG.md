@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-10-30
+
+### Added
+- **EventNotificationService**: New service for managing HTTP event notifications (webhooks)
+- **Webhook Support**: Configure Hikvision devices to push events to HTTP endpoints in real-time
+- **XML Format Support**: Added `putXml()` method to HikvisionClient for XML-only endpoints
+- **HTTP Client XML Methods**:
+  - `arrayToXml()`: Convert PHP arrays to Hikvision-compatible XML format
+  - `xmlToArray()`: Parse XML responses to PHP arrays
+  - Automatic XML/JSON format detection based on Content-Type headers
+- **Event Notification Methods**:
+  - `configureWebhook()`: Simplified webhook setup with single method call
+  - `configureHttpHost()`: Advanced webhook configuration with authentication
+  - `getHttpHost()` / `getAllHttpHosts()`: Retrieve webhook configurations
+  - `enableHttpHost()` / `disableHttpHost()`: Toggle webhook status
+  - `removeHttpHost()`: Delete webhook configuration
+  - `testHttpNotification()`: Send test event to configured webhook
+  - `getCapabilities()`: Get notification capabilities from device
+- **Multi-Device Webhook Support**: Configure webhooks across multiple devices
+- **Webhook Security**: HTTP Basic and Digest authentication support for webhooks
+- **PHP Extensions**: Added `ext-simplexml` and `ext-libxml` requirements
+
+### Changed
+- **HttpClient**: Enhanced to handle both JSON and XML request/response formats
+- **HikvisionClient**: Added dedicated `putXml()` method for XML-required endpoints
+- **HTTP Request Handling**: Automatic format detection and conversion
+
+### Features
+- 🔔 **Real-time events**: Receive instant notifications from devices
+- 🔒 **Secure webhooks**: Authentication support (Basic, Digest, or none)
+- 🏢 **Multi-device**: Configure webhooks for unlimited devices
+- 📨 **Event types**: Filter specific event types or receive all events
+- 🧪 **Testing**: Built-in webhook testing functionality
+- ⚡ **Performance**: Push-based events eliminate polling overhead
+- 🔄 **Backward compatible**: Existing code works without changes
+
+### Documentation
+- Added comprehensive webhook setup guide to README.md
+- Added EventNotificationService to Services Overview
+- Added webhook controller examples for receiving events
+- Added multi-device webhook configuration examples
+- Added webhook security best practices
+- Updated Table of Contents with webhook section
+
 ## [1.3.0] - 2025-10-13
 
 ### Added

@@ -1,23 +1,61 @@
 # Hikvision ISAPI Laravel Package
 
+[![Latest Version](https://img.shields.io/badge/version-v1.4.0-brightgreen.svg)](https://github.com/shaykhnazar/hikvision-isapi/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PHP Version](https://img.shields.io/badge/PHP-%5E8.2-blue.svg)](https://www.php.net/)
 [![Laravel Version](https://img.shields.io/badge/Laravel-%5E12.0-red.svg)](https://laravel.com/)
 
-A clean, modern Laravel package for integrating with **Hikvision ISAPI Face Recognition Terminals** and access control devices.
+A clean, modern Laravel package for integrating with **Hikvision ISAPI Face Recognition Terminals** and access control devices. Supports multi-device management, universal device providers (config, database, API), multi-tenant architectures, and real-time event webhooks.
 
 ## Features
 
+- **Real-Time Event Webhooks**: Configure devices to push events to your API endpoints (v1.4.0+)
+- **Multi-Device Support**: Manage unlimited Hikvision terminals simultaneously (v1.2.0+)
+- **Universal Device Providers**: Load devices from config, database, API, or custom sources (v1.3.0+)
+- **Multi-Tenant Ready**: Tenant-scoped device loading with runtime registration (v1.3.0+)
 - **Device Management**: Get device info, status, and capabilities
 - **Person Management**: Add, update, search, and delete persons
 - **Card Management**: Handle access cards with full CRUD operations
-- **Face Recognition**: Upload and manage face images
+- **Face Recognition**: Upload and manage face images with advanced search (v1.1.0+)
 - **Fingerprint Support**: Register and manage fingerprints
 - **Access Control**: Control doors remotely
 - **Event Handling**: Search and subscribe to access events
+- **Event Notifications**: HTTP webhooks for real-time event delivery (v1.4.0+)
 - **Clean Architecture**: SOLID principles, dependency injection, contracts
 - **Type Safety**: PHP 8.2+ features (enums, readonly properties)
+- **Performance**: Built-in caching with configurable TTL (v1.3.0+)
+- **XML/JSON Support**: Automatic format detection and conversion (v1.4.0+)
 - **Laravel 12**: Full Laravel 12.x support with service provider and facade
+
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Quick Start](#quick-start)
+- [Event Webhooks & Notifications](#event-webhooks--notifications-v140)
+  - [Configure Webhook Endpoint](#configure-webhook-endpoint)
+  - [Simple Webhook Setup](#simple-webhook-setup)
+  - [Advanced Webhook Configuration](#advanced-webhook-configuration)
+  - [Testing Webhooks](#testing-webhooks)
+  - [Receiving Webhook Events](#receiving-webhook-events)
+- [Multi-Device Support](#multi-device-support)
+  - [Configuration from Config Files](#configuration-from-config-files-default)
+  - [Loading Devices from Database](#loading-devices-from-database)
+  - [Using Eloquent Models with CallbackProvider](#using-eloquent-models-with-callbackprovider)
+  - [Multi-Tenant Support](#multi-tenant-support-example)
+  - [Runtime Device Registration](#runtime-device-registration)
+  - [Device Manager Methods](#device-manager-methods)
+- [Services Overview](#services-overview)
+- [DTOs (Data Transfer Objects)](#dtos-data-transfer-objects)
+- [Enums](#enums)
+- [Error Handling](#error-handling)
+- [Advanced Usage](#advanced-usage)
+- [Testing](#testing)
+- [Troubleshooting](#troubleshooting)
+- [Security](#security)
+- [Contributing](#contributing)
+- [Changelog](#changelog)
 
 ## Requirements
 
@@ -234,6 +272,259 @@ $events = $eventService->search([
 ], page: 0, maxResults: 50);
 ```
 
+## Event Webhooks & Notifications (v1.4.0+)
+
+Configure Hikvision devices to automatically push events (access granted, face recognized, etc.) to your application's webhook endpoint in real-time. This eliminates the need for polling and provides instant event notifications.
+
+### Configure Webhook Endpoint
+
+The `EventNotificationService` allows you to configure HTTP event notifications on Hikvision devices:
+
+```php
+use Shaykhnazar\HikvisionIsapi\Services\EventNotificationService;
+
+$eventNotificationService = app(EventNotificationService::class);
+```
+
+### Simple Webhook Setup
+
+The easiest way to set up a webhook is using the `configureWebhook()` method:
+
+```php
+// Configure device to send all events to your webhook endpoint
+$webhookUrl = 'https://your-api.com/api/webhooks/hikvision/events';
+
+$response = $eventNotificationService->configureWebhook(
+    webhookUrl: $webhookUrl,
+    hostId: 1 // Host ID (1-8), default is 1
+);
+
+// Enable the webhook
+$eventNotificationService->enableHttpHost(1);
+```
+
+### Advanced Webhook Configuration
+
+For more control over webhook configuration, use `configureHttpHost()`:
+
+```php
+$response = $eventNotificationService->configureHttpHost(
+    url: 'https://your-api.com/api/webhooks/hikvision/events',
+    id: 1,                      // Host ID (1-8)
+    protocol: 'HTTPS',          // HTTP or HTTPS
+    port: 443,                  // Port number
+    httpAuthType: 'basic',      // none, basic, or digest
+    username: 'webhook_user',   // Optional: for authentication
+    password: 'webhook_pass',   // Optional: for authentication
+    eventTypes: [               // Optional: specific event types (empty = all events)
+        'AccessControllerEvent',
+        'VideoMotion',
+        'linedetection'
+    ]
+);
+```
+
+### Managing Webhook Hosts
+
+```php
+// Get webhook configuration
+$config = $eventNotificationService->getHttpHost(1);
+
+// Get all webhook configurations (supports up to 8 hosts)
+$allConfigs = $eventNotificationService->getAllHttpHosts();
+
+// Enable webhook
+$eventNotificationService->enableHttpHost(1);
+
+// Disable webhook
+$eventNotificationService->disableHttpHost(1);
+
+// Remove webhook configuration
+$eventNotificationService->removeHttpHost(1);
+
+// Get notification capabilities
+$capabilities = $eventNotificationService->getCapabilities();
+```
+
+### Testing Webhooks
+
+Test if your webhook endpoint is reachable from the device:
+
+```php
+// Send a test event to configured webhook
+$response = $eventNotificationService->testHttpNotification(1);
+```
+
+### Receiving Webhook Events
+
+Create a controller to receive webhook events from Hikvision devices:
+
+```php
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class HikvisionWebhookController extends Controller
+{
+    /**
+     * Receive events from Hikvision devices
+     */
+    public function handleEvent(Request $request)
+    {
+        // Hikvision sends events as XML
+        $xmlData = $request->getContent();
+
+        // Parse XML to array
+        $xml = simplexml_load_string($xmlData);
+        $event = json_decode(json_encode($xml), true);
+
+        // Log the event
+        Log::info('Hikvision Event Received', $event);
+
+        // Process event based on type
+        $eventType = $event['eventType'] ?? null;
+
+        match($eventType) {
+            'AccessControllerEvent' => $this->handleAccessControl($event),
+            'faceDetection' => $this->handleFaceDetection($event),
+            'VideoMotion' => $this->handleMotionDetection($event),
+            default => Log::warning('Unknown event type', ['type' => $eventType])
+        };
+
+        // Return 200 OK to acknowledge receipt
+        return response('OK', 200);
+    }
+
+    protected function handleAccessControl(array $event)
+    {
+        // Example: Handle access control event
+        $employeeNo = $event['employeeNoString'] ?? null;
+        $cardNo = $event['cardNo'] ?? null;
+        $doorNo = $event['doorNo'] ?? null;
+
+        Log::info('Access Control Event', [
+            'employee' => $employeeNo,
+            'card' => $cardNo,
+            'door' => $doorNo,
+            'time' => $event['dateTime'] ?? now()
+        ]);
+
+        // Your business logic here
+        // - Record attendance
+        // - Send notifications
+        // - Update access logs
+    }
+
+    protected function handleFaceDetection(array $event)
+    {
+        // Handle face detection event
+        Log::info('Face Detection Event', $event);
+    }
+
+    protected function handleMotionDetection(array $event)
+    {
+        // Handle motion detection event
+        Log::info('Motion Detection Event', $event);
+    }
+}
+```
+
+**Route setup:**
+
+```php
+// routes/api.php
+Route::post('webhooks/hikvision/events', [HikvisionWebhookController::class, 'handleEvent'])
+    ->name('hikvision.webhook');
+```
+
+### Multi-Device Webhook Setup
+
+Configure webhooks for multiple devices:
+
+```php
+use Shaykhnazar\HikvisionIsapi\Facades\Hikvision;
+use Shaykhnazar\HikvisionIsapi\Services\EventNotificationService;
+
+$devices = ['entrance', 'exit', 'canteen'];
+$webhookUrl = 'https://your-api.com/api/webhooks/hikvision/events';
+
+foreach ($devices as $deviceName) {
+    $client = Hikvision::device($deviceName);
+    $eventService = new EventNotificationService($client);
+
+    // Configure webhook with device name in URL for identification
+    $deviceWebhookUrl = $webhookUrl . '?device=' . $deviceName;
+
+    $eventService->configureWebhook($deviceWebhookUrl);
+    $eventService->enableHttpHost(1);
+
+    Log::info("Webhook configured for device: {$deviceName}");
+}
+```
+
+### Webhook Security
+
+Protect your webhook endpoint:
+
+```php
+// Add authentication to webhook configuration
+$eventNotificationService->configureHttpHost(
+    url: 'https://your-api.com/api/webhooks/hikvision/events',
+    id: 1,
+    protocol: 'HTTPS',
+    port: 443,
+    httpAuthType: 'basic',
+    username: env('HIKVISION_WEBHOOK_USER'),
+    password: env('HIKVISION_WEBHOOK_PASSWORD')
+);
+
+// In your controller, validate the credentials
+public function handleEvent(Request $request)
+{
+    // Laravel automatically handles basic auth with middleware
+    // Or manually validate:
+    if ($request->getUser() !== env('HIKVISION_WEBHOOK_USER') ||
+        $request->getPassword() !== env('HIKVISION_WEBHOOK_PASSWORD')) {
+        return response('Unauthorized', 401);
+    }
+
+    // Process event...
+}
+```
+
+### Webhook Event Examples
+
+**Access Control Event (Face Recognition):**
+
+```xml
+<EventNotificationAlert>
+    <eventType>AccessControllerEvent</eventType>
+    <eventState>active</eventState>
+    <eventDescription>Access Control Event</eventDescription>
+    <dateTime>2025-10-30T14:30:00Z</dateTime>
+    <ActivePost>
+        <eventType>AccessControllerEvent</eventType>
+        <employeeNoString>EMP001</employeeNoString>
+        <name>John Doe</name>
+        <cardNo>1234567890</cardNo>
+        <doorNo>1</doorNo>
+        <swipeResult>success</swipeResult>
+    </ActivePost>
+</EventNotificationAlert>
+```
+
+**Motion Detection Event:**
+
+```xml
+<EventNotificationAlert>
+    <eventType>VideoMotion</eventType>
+    <eventState>active</eventState>
+    <dateTime>2025-10-30T14:35:00Z</dateTime>
+</EventNotificationAlert>
+```
+
 ## Using the Facade
 
 ```php
@@ -334,6 +625,31 @@ $eventService = app(EventService::class);
 $eventService->search(array $conditions, int $page, int $maxResults);
 $eventService->count(array $conditions);
 $eventService->subscribe(array $eventTypes, int $heartbeat);
+```
+
+### EventNotificationService
+
+```php
+$eventNotificationService = app(EventNotificationService::class);
+
+// Simple webhook setup
+$eventNotificationService->configureWebhook(string $webhookUrl, int $hostId);
+
+// Advanced configuration
+$eventNotificationService->configureHttpHost(string $url, int $id, string $protocol, int $port, string $httpAuthType, ?string $username, ?string $password, array $eventTypes);
+
+// Manage webhooks
+$eventNotificationService->getHttpHost(int $id);
+$eventNotificationService->getAllHttpHosts();
+$eventNotificationService->enableHttpHost(int $id);
+$eventNotificationService->disableHttpHost(int $id);
+$eventNotificationService->removeHttpHost(int $id);
+
+// Testing
+$eventNotificationService->testHttpNotification(int $id);
+
+// Capabilities
+$eventNotificationService->getCapabilities();
 ```
 
 ## DTOs (Data Transfer Objects)
@@ -672,8 +988,27 @@ $devices = Hikvision::availableDevices();
 // Check if device exists in configuration
 $exists = Hikvision::hasDevice('entrance'); // true or false
 
+// Reload devices from provider (useful for database-driven configs)
+Hikvision::reload(); // Clears cache and reloads from source
+
 // Clear cached clients (useful for testing)
 Hikvision::clearClients();
+
+// Register device at runtime (v1.3.0+)
+Hikvision::registerDevice('temp_device', [
+    'ip' => '192.168.1.150',
+    'port' => 80,
+    'username' => 'admin',
+    'password' => 'password',
+    'protocol' => 'http',
+    'timeout' => 30,
+    'verify_ssl' => false,
+]);
+
+// Switch device provider at runtime (v1.3.0+)
+use Shaykhnazar\HikvisionIsapi\Client\Providers\DatabaseDeviceProvider;
+$dbProvider = new DatabaseDeviceProvider(table: 'terminals');
+Hikvision::setProvider($dbProvider);
 ```
 
 ### Backward Compatibility
@@ -1009,6 +1344,56 @@ Contributions are welcome! Please follow these guidelines:
 5. Submit a pull request
 
 ## Changelog
+
+### v1.4.0 (2025-10-30)
+
+- **EventNotificationService**: New service for configuring HTTP event notifications (webhooks)
+- **Real-Time Webhooks**: Configure devices to push events to your API endpoints automatically
+- **XML Support**: Added `putXml()` method to HikvisionClient for XML-only endpoints
+- **HTTP Client Enhancements**:
+  - Added `arrayToXml()` method for converting arrays to XML format
+  - Added `xmlToArray()` method for parsing XML responses
+  - Automatic XML/JSON format detection based on Content-Type
+- **Event Notification Methods**:
+  - `configureWebhook()` - Simple one-line webhook setup
+  - `configureHttpHost()` - Advanced webhook configuration with authentication
+  - `enableHttpHost()` / `disableHttpHost()` - Enable/disable webhooks
+  - `testHttpNotification()` - Test webhook connectivity
+  - `getCapabilities()` - Get notification capabilities
+- **Dependencies**: Added `ext-simplexml` and `ext-libxml` for XML processing
+- **Multi-Device Webhooks**: Configure webhooks for multiple devices simultaneously
+- **Webhook Security**: Support for HTTP Basic and Digest authentication
+- 100% backward compatible with v1.3.0
+
+### v1.3.0 (2025-10-13)
+
+- **Universal Device Providers**: Framework for loading devices from any source
+- **DatabaseDeviceProvider**: Load terminals from database tables with built-in caching
+- **CallbackDeviceProvider**: Maximum flexibility with custom callbacks (API, Redis, etc.)
+- **Multi-Tenant Support**: Tenant-scoped device loading and isolation
+- **Runtime Device Registration**: Register devices dynamically at runtime
+- **Provider Switching**: Change device providers on-the-fly
+- **Hot Reload**: Update database-driven configurations without restart
+- **Configurable Caching**: Built-in cache support with TTL control
+- 100% backward compatible with v1.2.0
+
+### v1.2.0 (2025-10-13)
+
+- **Multi-Device Support**: Manage unlimited Hikvision devices simultaneously
+- **DeviceManager**: Central manager with lazy initialization and caching
+- **New Hikvision Facade**: Multi-device access with `Hikvision::device()`
+- **Device Discovery**: List and validate configured devices
+- **Device-Specific Clients**: Automatic client caching per device
+- 100% backward compatible with single-device setups
+
+### v1.1.0 (2025-10-13)
+
+- **Face Search Functionality**: Search face data with pagination support
+- **Face Data Record Upload**: Multipart/form-data support for face images
+- **Fixed PersonService Delete Endpoint**: Updated to match ISAPI specification
+- **Configuration Validation**: Required username/password validation
+- **Extended HTTP Client**: Added multipart form-data upload support
+- Enhanced error handling and validation
 
 ### v1.0.0 (2025-10-09)
 
