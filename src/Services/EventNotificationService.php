@@ -77,7 +77,10 @@ class EventNotificationService
 
         // Add event types if specified
         if (!empty($eventTypes)) {
-            $data['HttpHostNotification']['eventList'] = $eventTypes;
+            // Format event types for XML conversion
+            $data['HttpHostNotification']['eventList'] = [
+                'eventType' => $eventTypes
+            ];
         }
 
         // Use PUT with XML format (event notification endpoint requires XML)
@@ -189,20 +192,31 @@ class EventNotificationService
      *
      * @param string $webhookUrl Full webhook URL (e.g., https://api.example.com/webhooks/events)
      * @param int $hostId Host ID (1-8, default 1)
+     * @param array $eventTypes Event types to subscribe to (empty = subscribe to all access control events)
      * @return array Response from device
      */
-    public function configureWebhook(string $webhookUrl, int $hostId = 1): array
+    public function configureWebhook(string $webhookUrl, int $hostId = 1, array $eventTypes = []): array
     {
         $urlParts = parse_url($webhookUrl);
         $protocol = strtoupper($urlParts['scheme'] ?? 'http');
         $port = $urlParts['port'] ?? ($protocol === 'HTTPS' ? 443 : 80);
+
+        // If no event types specified, subscribe to common access control events
+        if (empty($eventTypes)) {
+            $eventTypes = [
+                'AccessControllerEvent',  // Main access control events (face/card scan)
+                'doorStatus',             // Door open/close events
+                'alarmLocal',             // Local alarm events
+            ];
+        }
 
         return $this->configureHttpHost(
             url: $webhookUrl,
             id: $hostId,
             protocol: $protocol,
             port: $port,
-            httpAuthType: 'none'
+            httpAuthType: 'none',
+            eventTypes: $eventTypes
         );
     }
 }
