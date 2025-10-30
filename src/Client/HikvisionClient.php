@@ -114,7 +114,10 @@ class HikvisionClient
 
     private function buildUri(string $endpoint, array $queryParams = []): string
     {
-        $queryParams['format'] = $this->format;
+        // Only set global format if not already specified in query params
+        if (!isset($queryParams['format'])) {
+            $queryParams['format'] = $this->format;
+        }
         $query = http_build_query($queryParams);
 
         return $this->baseUrl . $endpoint . ($query ? '?' . $query : '');
