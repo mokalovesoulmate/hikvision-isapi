@@ -65,6 +65,7 @@ class EventNotificationService
                 'ipAddress' => $ipAddress,
                 'portNo' => $port,
                 'httpAuthenticationMethod' => $httpAuthType,
+                'enabled' => true,
             ],
         ];
 
