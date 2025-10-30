@@ -201,22 +201,15 @@ class EventNotificationService
         $protocol = strtoupper($urlParts['scheme'] ?? 'http');
         $port = $urlParts['port'] ?? ($protocol === 'HTTPS' ? 443 : 80);
 
-        // If no event types specified, subscribe to common access control events
-        if (empty($eventTypes)) {
-            $eventTypes = [
-                'AccessControllerEvent',  // Main access control events (face/card scan)
-                'doorStatus',             // Door open/close events
-                'alarmLocal',             // Local alarm events
-            ];
-        }
-
+        // Don't specify event types - device will send all events
+        // This is simpler and avoids XML formatting issues with arrays
         return $this->configureHttpHost(
             url: $webhookUrl,
             id: $hostId,
             protocol: $protocol,
             port: $port,
             httpAuthType: 'none',
-            eventTypes: $eventTypes
+            eventTypes: []  // Empty array = subscribe to all events
         );
     }
 }
