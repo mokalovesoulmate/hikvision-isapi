@@ -212,4 +212,79 @@ class EventNotificationService
             eventTypes: []  // Empty array = subscribe to all events
         );
     }
+
+    /**
+     * Configure event listening service with IP, Port, and Path
+     * This method is designed for environments where you have a specific event server IP and port
+     * (Listening Service mode as described in Hikvision ISAPI documentation Section 6.1)
+     *
+     * The device will send events to: http(s)://<eventServerIp>:<eventServerPort><urlPath>
+     *
+     * @param string $eventServerIp Event server IP address (e.g., '192.168.1.100')
+     * @param int $eventServerPort Event server port (e.g., 8080)
+     * @param string $urlPath URL path on the event server (e.g., '/api/webhooks/hikvision/events')
+     * @param string $protocol Protocol type (HTTP or HTTPS, default HTTP)
+     * @param int $hostId Host ID (1-8, default 1)
+     * @param string $httpAuthType Authentication type (none, basic, digest, default none)
+     * @param string|null $username Username for authentication (if required)
+     * @param string|null $password Password for authentication (if required)
+     * @param array $eventTypes Event types to subscribe to (empty = all events)
+     * @return array Response from device
+     */
+    public function configureEventListeningHost(
+        string $eventServerIp,
+        int $eventServerPort,
+        string $urlPath = '/',
+        string $protocol = 'HTTP',
+        int $hostId = 1,
+        string $httpAuthType = 'none',
+        ?string $username = null,
+        ?string $password = null,
+        array $eventTypes = []
+    ): array {
+        // Validate IP address
+        if (!filter_var($eventServerIp, FILTER_VALIDATE_IP)) {
+            throw new \InvalidArgumentException("Invalid IP address: {$eventServerIp}");
+        }
+
+        // Validate port range
+        if ($eventServerPort < 1 || $eventServerPort > 65535) {
+            throw new \InvalidArgumentException("Port must be between 1 and 65535, got: {$eventServerPort}");
+        }
+
+        // Ensure URL path starts with /
+        if (!str_starts_with($urlPath, '/')) {
+            $urlPath = '/' . $urlPath;
+        }
+
+        $data = [
+            'HttpHostNotification' => [
+                'id' => $hostId,
+                'url' => $urlPath,
+                'protocolType' => strtoupper($protocol),
+                'parameterFormatType' => 'XML',
+                'addressingFormatType' => 'ipaddress',
+                'ipAddress' => $eventServerIp,
+                'portNo' => $eventServerPort,
+                'httpAuthenticationMethod' => $httpAuthType,
+                'enabled' => true,
+            ],
+        ];
+
+        // Add authentication if provided
+        if ($httpAuthType !== 'none' && $username && $password) {
+            $data['HttpHostNotification']['userName'] = $username;
+            $data['HttpHostNotification']['password'] = $password;
+        }
+
+        // Add event types if specified
+        if (!empty($eventTypes)) {
+            $data['HttpHostNotification']['eventList'] = [
+                'eventType' => $eventTypes
+            ];
+        }
+
+        $endpoint = sprintf(self::ENDPOINT_HTTP_HOST, $hostId);
+        return $this->client->putXml($endpoint, $data);
+    }
 }
