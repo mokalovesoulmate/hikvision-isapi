@@ -253,9 +253,12 @@ class EventNotificationService
         }
 
         // Ensure URL path starts with /
-        if (!str_starts_with($urlPath, '/')) {
-            $urlPath = '/' . $urlPath;
+        if (! str_starts_with($urlPath, '/')) {
+            $urlPath = '/'.$urlPath;
         }
+
+        // Determine if input is IP address or domain name
+        $isIpAddress = filter_var($eventServerIp, FILTER_VALIDATE_IP);
 
         $data = [
             'HttpHostNotification' => [
@@ -263,13 +266,19 @@ class EventNotificationService
                 'url' => $urlPath,
                 'protocolType' => strtoupper($protocol),
                 'parameterFormatType' => 'XML',
-                'addressingFormatType' => 'ipaddress',
-                'ipAddress' => $eventServerIp,
+                'addressingFormatType' => $isIpAddress ? 'ipaddress' : 'hostname',
                 'portNo' => $eventServerPort,
                 'httpAuthenticationMethod' => $httpAuthType,
                 'enabled' => true,
             ],
         ];
+
+        // Add IP address or hostname based on type
+        if ($isIpAddress) {
+            $data['HttpHostNotification']['ipAddress'] = $eventServerIp;
+        } else {
+            $data['HttpHostNotification']['hostName'] = $eventServerIp;
+        }
 
         // Add authentication if provided
         if ($httpAuthType !== 'none' && $username && $password) {
