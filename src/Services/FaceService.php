@@ -135,6 +135,9 @@ class FaceService
             [
                 'name' => 'faceURL',  // CRITICAL FIX: Changed from 'FaceDataRecord' to 'faceURL' per official docs
                 'contents' => $faceDataRecord,
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                ],
             ],
             [
                 'name' => 'img',  // Changed from 'FaceImage' to 'img' per official docs
