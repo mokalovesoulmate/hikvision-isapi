@@ -220,7 +220,7 @@ class EventNotificationService
      *
      * The device will send events to: http(s)://<eventServerIp>:<eventServerPort><urlPath>
      *
-     * @param string $eventServerIp Event server IP address (e.g., '192.168.1.100')
+     * @param string $eventServerIp Event server IP address or domain name (e.g., '192.168.1.100' or 'api.company.com')
      * @param int $eventServerPort Event server port (e.g., 8080)
      * @param string $urlPath URL path on the event server (e.g., '/api/webhooks/hikvision/events')
      * @param string $protocol Protocol type (HTTP or HTTPS, default HTTP)
@@ -242,9 +242,9 @@ class EventNotificationService
         ?string $password = null,
         array $eventTypes = []
     ): array {
-        // Validate IP address
-        if (!filter_var($eventServerIp, FILTER_VALIDATE_IP)) {
-            throw new \InvalidArgumentException("Invalid IP address: {$eventServerIp}");
+        // Validate IP address or domain name
+        if (! filter_var($eventServerIp, FILTER_VALIDATE_IP) && ! $this->isValidDomain($eventServerIp)) {
+            throw new \InvalidArgumentException("Invalid IP address or domain name: {$eventServerIp}");
         }
 
         // Validate port range
@@ -286,5 +286,20 @@ class EventNotificationService
 
         $endpoint = sprintf(self::ENDPOINT_HTTP_HOST, $hostId);
         return $this->client->putXml($endpoint, $data);
+    }
+
+    /**
+     * Validate if the given string is a valid domain name
+     *
+     * @param string $domain Domain name to validate
+     * @return bool True if valid domain, false otherwise
+     */
+    private function isValidDomain(string $domain): bool
+    {
+        // Basic domain validation
+        // Allows: example.com, sub.example.com, localhost, etc.
+        $pattern = '/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?$/';
+
+        return (bool) preg_match($pattern, $domain);
     }
 }
