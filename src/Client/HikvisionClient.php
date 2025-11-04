@@ -103,13 +103,13 @@ class HikvisionClient
     public function postMultipart(string $endpoint, array $multipart = [], array $queryParams = []): array
     {
         $uri = $this->buildUri($endpoint, $queryParams);
-        return $this->httpClient->postMultipart($uri, $multipart, $this->buildOptions());
+        return $this->httpClient->postMultipart($uri, $multipart, $this->buildOptions(excludeContentType: true));
     }
 
     public function putMultipart(string $endpoint, array $multipart = [], array $queryParams = []): array
     {
         $uri = $this->buildUri($endpoint, $queryParams);
-        return $this->httpClient->putMultipart($uri, $multipart, $this->buildOptions());
+        return $this->httpClient->putMultipart($uri, $multipart, $this->buildOptions(excludeContentType: true));
     }
 
     private function buildUri(string $endpoint, array $queryParams = []): string
@@ -123,20 +123,24 @@ class HikvisionClient
         return $this->baseUrl . $endpoint . ($query ? '?' . $query : '');
     }
 
-    private function buildOptions(): array
+    private function buildOptions(bool $excludeContentType = false): array
     {
         $device = $this->config['devices'][$this->config['default']];
 
         $contentType = $this->format === 'xml' ? 'application/xml' : 'application/json';
         $accept = $this->format === 'xml' ? 'application/xml' : 'application/json';
 
+        $headers = ['Accept' => $accept];
+
+        // Don't set Content-Type for multipart requests (Guzzle sets it automatically)
+        if (!$excludeContentType) {
+            $headers['Content-Type'] = $contentType;
+        }
+
         return array_merge($this->authOptions, [
             'timeout' => $device['timeout'],
             'verify' => $device['verify_ssl'],
-            'headers' => [
-                'Accept' => $accept,
-                'Content-Type' => $contentType,
-            ],
+            'headers' => $headers,
         ]);
     }
 }
