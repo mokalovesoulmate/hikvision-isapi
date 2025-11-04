@@ -133,16 +133,14 @@ class FaceService
 
         $multipart = [
             [
-                'name' => 'faceURL',  // CRITICAL FIX: Changed from 'FaceDataRecord' to 'faceURL' per official docs
+                'name' => 'FaceDataRecord',
                 'contents' => $faceDataRecord,
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                ],
+                // No Content-Type header - send as plain text like Postman
             ],
             [
-                'name' => 'img',  // Changed from 'FaceImage' to 'img' per official docs
+                'name' => 'img',
                 'contents' => $imageContent,
-                'filename' => 'facePic.jpg',  // Official docs use 'facePic.jpg'
+                'filename' => 'facePic.jpg',
                 'headers' => [
                     'Content-Type' => 'image/jpeg',
                 ],
@@ -227,6 +225,7 @@ class FaceService
             [
                 'name' => 'faceURL',
                 'contents' => $faceDataJson,
+                // No Content-Type header for JSON field
             ],
             [
                 'name' => 'img',
@@ -273,6 +272,7 @@ class FaceService
             [
                 'name' => 'faceURL',
                 'contents' => $faceDataJson,
+                // No Content-Type header for JSON field
             ],
             [
                 'name' => 'img',
