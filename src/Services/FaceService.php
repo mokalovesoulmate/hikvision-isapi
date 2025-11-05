@@ -140,7 +140,7 @@ class FaceService
             [
                 'name' => 'img',
                 'contents' => $imageContent,
-                'filename' => 'facePic.jpg',
+                'filename' => "{$fpid}.jpg", // Use unique filename per employee
                 'headers' => [
                     'Content-Type' => 'image/jpeg',
                 ],
@@ -230,7 +230,7 @@ class FaceService
             [
                 'name' => 'img',
                 'contents' => $imageContent,
-                'filename' => 'faceImage.jpg',
+                'filename' => "{$fpid}.jpg", // Use unique filename per employee
                 'headers' => [
                     'Content-Type' => 'image/jpeg',
                 ],
@@ -277,7 +277,7 @@ class FaceService
             [
                 'name' => 'img',
                 'contents' => $imageContent,
-                'filename' => 'faceImage.jpg',
+                'filename' => "{$fpid}.jpg", // Use unique filename per employee
                 'headers' => [
                     'Content-Type' => 'image/jpeg',
                 ],
