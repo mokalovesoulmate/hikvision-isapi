@@ -20,7 +20,9 @@ final readonly class Person
         public ?string $email = null,
         public ?string $phoneNumber = null,
         public ?int $organizationId = null,
-        public ?array $belongGroup = null
+        public ?string $belongGroup = null,
+        public ?int $groupId = null,
+        public ?string $gender = null,
     ) {}
 
     public function toArray(): array
@@ -46,7 +48,7 @@ final readonly class Person
             $userInfo['doorRight'] = $this->doorRight;
         }
 
-        if (!empty($this->rightPlan)) {
+        if (! empty($this->rightPlan)) {
             $userInfo['RightPlan'] = $this->rightPlan;
         }
 
@@ -66,23 +68,20 @@ final readonly class Person
             $userInfo['belongGroup'] = $this->belongGroup;
         }
 
+        if ($this->groupId !== null) {
+            $userInfo['groupId'] = $this->groupId;
+        }
+
+        if ($this->gender !== null) {
+            $userInfo['gender'] = $this->gender;
+        }
+
         return ['UserInfo' => $userInfo];
     }
 
     public static function fromArray(array $data): self
     {
         $userInfo = $data['UserInfo'] ?? $data;
-
-        // Handle belongGroup - API might return string or array
-        $belongGroup = null;
-        if (isset($userInfo['belongGroup'])) {
-            if (is_array($userInfo['belongGroup'])) {
-                $belongGroup = $userInfo['belongGroup'];
-            } elseif (is_string($userInfo['belongGroup']) && !empty($userInfo['belongGroup'])) {
-                // Convert string to array (might be comma-separated or single value)
-                $belongGroup = [$userInfo['belongGroup']];
-            }
-        }
 
         return new self(
             employeeNo: $userInfo['employeeNo'] ?? '',
@@ -96,7 +95,9 @@ final readonly class Person
             email: $userInfo['email'] ?? null,
             phoneNumber: $userInfo['phoneNumber'] ?? null,
             organizationId: $userInfo['organizationId'] ?? null,
-            belongGroup: $belongGroup
+            belongGroup: $userInfo['belongGroup'] ?? null,
+            groupId: $userInfo['groupId'] ?? null,
+            gender: $userInfo['gender'] ?? null,
         );
     }
 }
