@@ -1,13 +1,23 @@
 {
-  "name": "shaykhnazar/hikvision-isapi",
-  "description": "Laravel package for Hikvision ISAPI Face Recognition Terminals integration",
+  "name": "mokalovesoulmate/hikvision-isapi",
+  "description": "Laravel package for Hikvision ISAPI Face Recognition Terminals integration. Forked from `shaykhnazar/hikvision-isapi`.",
   "type": "library",
   "license": "MIT",
-  "keywords": ["laravel", "hikvision", "isapi", "face-recognition", "access-control"],
+  "keywords": [
+    "laravel",
+    "hikvision",
+    "isapi",
+    "face-recognition",
+    "access-control"
+  ],
   "authors": [
     {
       "name": "Shaykhnazar",
       "email": "shaykhnazar@gmail.com"
+    },
+    {
+      "name": "Moses Kurniawan",
+      "email": "mokalovesoulmate@gmail.com"
     }
   ],
   "require": {
